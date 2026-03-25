@@ -30,7 +30,6 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Product } from "./backend.d";
 import { useActor } from "./hooks/useActor";
-import { useMenu } from "./hooks/useQueries";
 
 // ---- Types ----
 interface CartItem {
@@ -736,7 +735,8 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
   const menuRef = useRef<HTMLElement>(null);
 
-  const { data: rawMenu = FALLBACK_PRODUCTS } = useMenu();
+  const _rawMenu = FALLBACK_PRODUCTS;
+  const rawMenu = FALLBACK_PRODUCTS;
 
   // Normalize categories: map Lunch/Dinner → Meals, Burger → Burgers
   const menuItems: Product[] = rawMenu.map((p) => {
