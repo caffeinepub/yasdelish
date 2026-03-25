@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700;900&family=Figtree:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* YASDELISH warm cafe palette */
+    /* Cream/beige background: #F3E6D3 */
+    --background: 0.928 0.032 72;
+    /* Near-black/brown foreground: #1F140F */
+    --foreground: 0.18 0.032 52;
+    /* Ivory nav: #F7F1E8 */
+    --card: 0.96 0.018 78;
+    --card-foreground: 0.18 0.032 52;
+    --popover: 0.96 0.018 78;
+    --popover-foreground: 0.18 0.032 52;
+    /* Burnt orange CTA: #D8842F */
+    --primary: 0.65 0.14 52;
+    --primary-foreground: 0.97 0.018 78;
+    /* Lighter cream for secondary */
+    --secondary: 0.945 0.025 70;
+    --secondary-foreground: 0.18 0.032 52;
+    --muted: 0.91 0.025 70;
+    --muted-foreground: 0.45 0.025 60;
+    --accent: 0.65 0.14 52;
+    --accent-foreground: 0.97 0.018 78;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.86 0.03 68;
+    --input: 0.86 0.03 68;
+    --ring: 0.65 0.14 52;
+
+    /* Coffee dark card: #2B1A12 */
+    --coffee-card: 0.21 0.04 50;
+    /* Footer deep brown: #2A140C */
+    --coffee-footer: 0.18 0.04 40;
+    /* Orange accent */
+    --coffee-orange: 0.65 0.14 52;
+
+    --chart-1: 0.646 0.222 41.116;
+    --chart-2: 0.6 0.118 184.704;
+    --chart-3: 0.398 0.07 227.392;
+    --chart-4: 0.828 0.189 84.429;
+    --chart-5: 0.769 0.188 70.08;
+    --sidebar: 0.96 0.018 78;
+    --sidebar-foreground: 0.18 0.032 52;
+    --sidebar-primary: 0.65 0.14 52;
+    --sidebar-primary-foreground: 0.97 0.018 78;
+    --sidebar-accent: 0.928 0.032 72;
+    --sidebar-accent-foreground: 0.18 0.032 52;
+    --sidebar-border: 0.86 0.03 68;
+    --sidebar-ring: 0.65 0.14 52;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
