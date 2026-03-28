@@ -1,13 +1,7 @@
-import Principal "mo:core/Principal";
-import Runtime "mo:core/Runtime";
-import List "mo:core/List";
 import Map "mo:core/Map";
 import Order "mo:core/Order";
-import Text "mo:core/Text";
-import Int "mo:core/Int";
-import Array "mo:core/Array";
-import Iter "mo:core/Iter";
 import Nat "mo:core/Nat";
+import Text "mo:core/Text";
 
 actor {
   type Product = {
@@ -20,8 +14,8 @@ actor {
   };
 
   module Product {
-    public func compare(product1 : Product, product2 : Product) : Order.Order {
-      Nat.compare(product1.id, product2.id);
+    public func compare(p1 : Product, p2 : Product) : Order.Order {
+      Nat.compare(p1.id, p2.id);
     };
   };
 
@@ -31,8 +25,8 @@ actor {
   };
 
   module CartProduct {
-    public func compare(cartProduct1 : CartProduct, cartProduct2 : CartProduct) : Order.Order {
-      Nat.compare(cartProduct1.product.id, cartProduct2.product.id);
+    public func compare(c1 : CartProduct, c2 : CartProduct) : Order.Order {
+      Nat.compare(c1.product.id, c2.product.id);
     };
   };
 
@@ -52,54 +46,52 @@ actor {
   };
 
   module BakeryOrder {
-    public func compare(order1 : BakeryOrder, order2 : BakeryOrder) : Order.Order {
-      Nat.compare(order1.id, order2.id);
+    public func compare(o1 : BakeryOrder, o2 : BakeryOrder) : Order.Order {
+      Nat.compare(o1.id, o2.id);
     };
   };
 
-  let products = Map.singleton<Nat, Product>(0, {
-    id = 0;
-    name = "Espresso";
-    description = "Strong coffee without milk";
-    category = "COFFEE";
-    price = 5;
-    imageUrl = "espresso.jpg";
-  });
+  // Keep products stable var for backward compatibility
+  let products = Map.empty<Nat, Product>();
 
   var nextOrderId = 1;
   let orders = Map.empty<Nat, BakeryOrder>();
 
-  func getCartProducts(cartItems : [(Nat, Nat)]) : [CartProduct] {
-    cartItems.map(
-      func((productId, quantity)) {
-        let product = switch (products.get(productId)) {
-          case (null) { Runtime.trap("Product not found") };
+  public shared func placeOrder(
+    name : Text,
+    notes : Text,
+    address : Text,
+    phone : Text,
+    cartItems : [(Nat, Nat)]
+  ) : async Nat {
+    // Build cart items using a placeholder product when not found in DB
+    let cartProducts : [CartProduct] = cartItems.map(
+      func((productId, quantity)) : CartProduct {
+        let product : Product = switch (products.get(productId)) {
           case (?p) { p };
+          case null {
+            {
+              id = productId;
+              name = "Item #" # productId.toText();
+              description = "";
+              category = "";
+              price = 0;
+              imageUrl = "";
+            }
+          };
         };
-        {
-          product;
-          quantity;
-        };
+        { product; quantity };
       }
     );
-  };
-
-  func calculateTotal(cartProducts : [CartProduct]) : Nat {
-    cartProducts.foldLeft(0, func(accum, item) { accum + (item.product.price * item.quantity) });
-  };
-
-  public query ({ caller }) func getMenu() : async [Product] {
-    products.values().toArray().sort();
-  };
-
-  public shared ({ caller }) func placeOrder(name : Text, notes : Text, address : Text, phone : Text, cartItems : [(Nat, Nat)]) : async Nat {
-    let cartProducts = getCartProducts(cartItems);
+    let total = cartProducts.foldLeft(
+      0,
+      func(acc : Nat, item : CartProduct) : Nat {
+        acc + item.product.price * item.quantity
+      }
+    );
     let order : BakeryOrder = {
       id = nextOrderId;
-      cart = {
-        items = cartProducts;
-        total = calculateTotal(cartProducts);
-      };
+      cart = { items = cartProducts; total };
       customerName = name;
       notes;
       address;
@@ -112,7 +104,7 @@ actor {
     orderId;
   };
 
-  public query ({ caller }) func getOrders() : async [BakeryOrder] {
+  public query func getOrders() : async [BakeryOrder] {
     orders.values().toArray().sort();
   };
 };

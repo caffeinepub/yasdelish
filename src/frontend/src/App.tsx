@@ -15,6 +15,7 @@ import {
   ArrowRight,
   ChefHat,
   Clock,
+  CreditCard,
   Facebook,
   Instagram,
   MapPin,
@@ -308,6 +309,21 @@ function getProductImage(p: Product): string {
   );
 }
 
+// ---- Format card number as XXXX XXXX XXXX XXXX ----
+function formatCardNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+}
+
+// ---- Format expiry as MM/YY ----
+function formatExpiry(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length >= 3) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+  return digits;
+}
+
 // ---- Checkout Modal ----
 function CheckoutModal({
   open,
@@ -327,6 +343,12 @@ function CheckoutModal({
     phone: "",
     notes: "",
   });
+  const [payment, setPayment] = useState({
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    cardholderName: "",
+  });
   const [loading, setLoading] = useState(false);
 
   const subtotal = cart.reduce(
@@ -334,12 +356,35 @@ function CheckoutModal({
     0,
   );
 
+  function validatePayment(): boolean {
+    const rawCard = payment.cardNumber.replace(/\s/g, "");
+    if (rawCard.length !== 16) {
+      toast.error("Please enter a valid 16-digit card number.");
+      return false;
+    }
+    const expiryMatch = payment.expiry.match(/^(0[1-9]|1[0-2])\/\d{2}$/);
+    if (!expiryMatch) {
+      toast.error("Please enter a valid expiry date (MM/YY).");
+      return false;
+    }
+    if (payment.cvv.length < 3 || payment.cvv.length > 4) {
+      toast.error("Please enter a valid CVV (3-4 digits).");
+      return false;
+    }
+    if (!payment.cardholderName.trim()) {
+      toast.error("Please enter the cardholder name.");
+      return false;
+    }
+    return true;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.address || !form.phone) {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (!validatePayment()) return;
     setLoading(true);
     try {
       const cartItems: [bigint, bigint][] = cart.map((item) => [
@@ -367,13 +412,17 @@ function CheckoutModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md" data-ocid="checkout.dialog">
+      <DialogContent
+        className="max-w-md max-h-[90vh] overflow-y-auto"
+        data-ocid="checkout.dialog"
+      >
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Complete Your Order
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Order Summary */}
           <div className="bg-secondary rounded-xl p-4 space-y-1.5">
             {cart.map((item) => (
               <div
@@ -397,6 +446,8 @@ function CheckoutModal({
               </span>
             </div>
           </div>
+
+          {/* Delivery Details */}
           <div className="space-y-1">
             <Label htmlFor="checkout-name">Full Name *</Label>
             <Input
@@ -444,6 +495,171 @@ function CheckoutModal({
               data-ocid="checkout.textarea"
             />
           </div>
+
+          {/* Payment Section */}
+          <div
+            className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-3"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.98 0.015 75) 0%, oklch(0.96 0.02 65) 100%)",
+              borderColor: "oklch(0.88 0.04 65)",
+              boxShadow:
+                "0 2px 8px oklch(0.6 0.08 50 / 0.12), 0 1px 2px oklch(0.6 0.08 50 / 0.08)",
+            }}
+            data-ocid="checkout.panel"
+          >
+            {/* Card Header */}
+            <div
+              className="flex items-center gap-2 pb-1 border-b"
+              style={{ borderColor: "oklch(0.88 0.04 65)" }}
+            >
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: "oklch(0.55 0.18 45)", color: "white" }}
+              >
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <div>
+                <p
+                  className="font-display font-bold text-sm"
+                  style={{ color: "oklch(0.3 0.05 45)" }}
+                >
+                  Pay by Card
+                </p>
+                <p className="text-xs" style={{ color: "oklch(0.55 0.04 50)" }}>
+                  Visa, Mastercard, RuPay accepted
+                </p>
+              </div>
+              {/* Card type chips */}
+              <div className="ml-auto flex gap-1">
+                {["VISA", "MC", "RP"].map((chip) => (
+                  <span
+                    key={chip}
+                    className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                    style={{
+                      background: "oklch(0.55 0.18 45 / 0.12)",
+                      color: "oklch(0.45 0.12 45)",
+                      border: "1px solid oklch(0.55 0.18 45 / 0.25)",
+                    }}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Card Number */}
+            <div className="space-y-1">
+              <Label
+                htmlFor="card-number"
+                className="text-xs font-semibold"
+                style={{ color: "oklch(0.4 0.05 50)" }}
+              >
+                Card Number *
+              </Label>
+              <Input
+                id="card-number"
+                value={payment.cardNumber}
+                onChange={(e) =>
+                  setPayment((p) => ({
+                    ...p,
+                    cardNumber: formatCardNumber(e.target.value),
+                  }))
+                }
+                placeholder="0000 0000 0000 0000"
+                maxLength={19}
+                inputMode="numeric"
+                className="font-mono tracking-wider bg-white/70"
+                data-ocid="checkout.input"
+              />
+            </div>
+
+            {/* Expiry + CVV Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label
+                  htmlFor="card-expiry"
+                  className="text-xs font-semibold"
+                  style={{ color: "oklch(0.4 0.05 50)" }}
+                >
+                  Expiry Date *
+                </Label>
+                <Input
+                  id="card-expiry"
+                  value={payment.expiry}
+                  onChange={(e) =>
+                    setPayment((p) => ({
+                      ...p,
+                      expiry: formatExpiry(e.target.value),
+                    }))
+                  }
+                  placeholder="MM/YY"
+                  maxLength={5}
+                  inputMode="numeric"
+                  className="font-mono bg-white/70"
+                  data-ocid="checkout.input"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor="card-cvv"
+                  className="text-xs font-semibold"
+                  style={{ color: "oklch(0.4 0.05 50)" }}
+                >
+                  CVV *
+                </Label>
+                <Input
+                  id="card-cvv"
+                  value={payment.cvv}
+                  onChange={(e) =>
+                    setPayment((p) => ({
+                      ...p,
+                      cvv: e.target.value.replace(/\D/g, "").slice(0, 4),
+                    }))
+                  }
+                  placeholder="•••"
+                  maxLength={4}
+                  inputMode="numeric"
+                  type="password"
+                  className="font-mono bg-white/70"
+                  data-ocid="checkout.input"
+                />
+              </div>
+            </div>
+
+            {/* Cardholder Name */}
+            <div className="space-y-1">
+              <Label
+                htmlFor="card-holder"
+                className="text-xs font-semibold"
+                style={{ color: "oklch(0.4 0.05 50)" }}
+              >
+                Cardholder Name *
+              </Label>
+              <Input
+                id="card-holder"
+                value={payment.cardholderName}
+                onChange={(e) =>
+                  setPayment((p) => ({
+                    ...p,
+                    cardholderName: e.target.value,
+                  }))
+                }
+                placeholder="Name as on card"
+                className="bg-white/70"
+                data-ocid="checkout.input"
+              />
+            </div>
+
+            {/* Security note */}
+            <p
+              className="text-[11px] flex items-center gap-1"
+              style={{ color: "oklch(0.55 0.04 50)" }}
+            >
+              <span>🔒</span> Your payment details are encrypted and secure.
+            </p>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -459,7 +675,7 @@ function CheckoutModal({
               className="bg-primary text-primary-foreground rounded-full px-6"
               data-ocid="checkout.submit_button"
             >
-              {loading ? "Placing Order..." : "Confirm Order"}
+              {loading ? "Placing Order..." : "Confirm & Pay"}
             </Button>
           </DialogFooter>
         </form>
